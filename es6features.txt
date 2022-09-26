@@ -525,7 +525,7 @@ console.log(`id ${emp.id} Name ${emp.name} Salary ${emp.calculateSalary()}`)
 emp = new Employee(23, 'Karthik')
 console.log(`id ${emp.id} Name ${emp.name} Salary ${emp.calculateSalary()}`)
 .....................................................................................
-			literal syntax:
+			    literal syntax:
 ....................................................................................
 //literal 
 
