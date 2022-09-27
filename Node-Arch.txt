@@ -1,0 +1,240 @@
+				Node.js Architecture
+.....................................................................................
+
+What is Node.js?
+
+ Node.js is a platform to run js code outside web browser.
+ Platform means collection of tools,libs/apis,runtime in order to build end to end apps.
+
+Why Node.js Was Created?
+
+ Before Node.js, There was no arch for building application particullar networkbased apps using nonblocking /async programming model.
+
+
+How programs works?
+
+Program is collection of instructions
+
+Program has two types
+
+1.source program 
+   The program is written any language
+2.compiled program
+   The program is compiled by compiler of any language
+
+The compiled program is executed ; loading on main memory so that cpu can access.
+
+in order to run the program , we need another program - process/Runtime.
+
+The process runs the program always sequentially- line by line.
+
+eg:
+ instructions1 -----|running---
+ instructions2
+ instructions3
+ instructionsN
+     |
+  Process(runtime)
+
+while instructions1 is running,the instructions2 cant be executed - Blocking
+
+instructions2 is blocked because of instruction1
+
+instructions1 lets say would be io call (reading from the file,or from network socket socket)
+ 
+can we run all instructions simultaneously?
+ Yes!
+Threads
+ 
+ T1--instructions1 -----|running---
+ T2--instructions2
+ T3--instructions3
+ TN--instructionsN
+....................................................................................
+			 Networking,Multi Threading,io
+....................................................................................
+
+What is io? What is Blocking Io? What is Nonblocking io?
+.....................................................................................
+				 File Descriptors
+.....................................................................................
+
+1.File descriptors is  program written in c language- array
+2.File descriptor is associated with every process on os- if you run more than one process - will have more file descriptor table
+
+FD arch:
+Integer value	Name	<unistd.h> symbolic constant[1]	<stdio.h> file stream[2]
+0	Standard input	STDIN_FILENO	stdin
+1	Standard output	STDOUT_FILENO	stdout
+2	Standard error	STDERR_FILENO	stderr
+
+ data= readFile() -----|running---
+ calculate()
+ add()
+ mulitply()
+
+
+Process:
+1.we use language high level api to start reading file from the disk
+  java:
+   FileInputStream fins= newFileInputStream("c:/tmp/version.txt")
+   fins.read()
+
+ java uses read api--------|jvm----will call c api(os api)---->kernal--fd
+
+2.we use language high level api to start reading data from the network(Remote computer)
+  java:
+ java uses readSocket------i--------|jvm----will call c api(os api)---->kernal--fd
+
+..................................................................................
+
+Network io and web server:
+
+Any web server if you take, it works based on io model- socket-network io.
+
+Traditional web server,  for every client request is  handled inside server by a thread.
+
+                    "Request Per Thread model"
+			
+.....................................................................................
+Drawbacks of Request Per Thread Model.
+   1000 req = 1000 thread
+   1 million = 1 million threads
+
+if webserver starts receiving more and more load, they cant handle request.
+The problem was called as "C10K" Problem
+
+c10k Problem:
+The C10k problem is the problem of optimizing network sockets to handle a large number of clients at the same time. The name C10k is a numeronym for concurrently handling ten thousand connections.
+ 
+ if a webserver handles 10 thousand connections(threads) at the same time , it is good webserver".
+
+....................................................................................
+        C10k Problem aims to handle more request with min "Resource"
+....................................................................................
+
+Here Resource means threads.
+How to reduce thread to handle more users.
+ Having limited no of threads how to handle more request.
+
+Why should i reduce thread? what is problem with threads?
+
+Evils of Thread:
+ ->Thread is subject to memory.
+ ->Thread is subject to cpu, cpu need to do lot of ctx switch.
+ ->Thread inter communication causes thread dead locks
+....................................................................................
+Solution:
+ Having  a limited no of threads , at least one or two.
+
+In 2000, The linux operating system introduced an api which is non blocking io api 
+
+1.select + read
+  In this model thread is not blocked because of io, but thread has to make an explicit read call for data ,once the data is ready.
+  because of this another api been introduced
+
+2.poll
+  Poll eleminated extra read call from the application. rather kernal push the data when is available - Event Driven Programming model.
+
+3.EPoll:
+  It is a framework, introduced in linux to handle non blocking operations using event driven programming model.
+
+monitoring   multiple file descriptors to see if I/O is possible on any of
+       them.  
+EPoll introduced a concept called "event loop"
+
+event loop syntax:
+ for (;;) {
+
+
+
+ }
+
+Event Loop:
+
+Any similar arch/technology available today like node.js?
+
+Java - with Netty
+Java with Vertx
+Java with Quarkus
+
+What type apps we can build using Node.js?
+
+You can build  concurrent non blocking network io apps...
+
+....................................................................................
+
+Node.js platform has been built on 
+
+Google v8 : javascript engine  to execute js program
+libuv :  It is operating system non blocking abstractions
+
+Node.js is multi threaded? or single threaded?
+
+No!
+
+Node is mult threaded.
+
+Node provides two types of threads
+
+1.Event loop thread 
+   Node has only one event loop thread
+ Event loop thread only handles non blocking IO - Socket IO(NETWORK IO)
+
+2.Worker pool threads
+  Node has dedcited more no of threads called "worker pool threads"
+  
+ Use case:
+   To run non blocking "file io"
+   To Run blocking code and blocking io operations.
+...................................................................................
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
