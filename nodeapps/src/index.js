@@ -1,66 +1,23 @@
-const getUser = () => {
-    console.log('getUser is called')
-    return new Promise((resolve, reject) => {
-        let user = {
-            name: 'admin',
-            password: 'admin'
-        }
-        //user =null
-        let error = {
-            message: 'User Not found'
-        }
-        if (user) {
-            setTimeout(resolve, 1000, user)
-        } else {
-            setTimeout(reject, 1000, error)
-        }
-    })
-}
+const fs = require('fs');
+const path = require('path');
 
-const login = user => {
-    console.log('login is called')
+const fileName = path.join(__dirname, 'assets/grains.txt');
 
-    return new Promise((resolve, reject) => {
-        if (user.name == 'admin' && user.password === 'admin') {
-            setTimeout(resolve, 1000, { message: 'Login Success' })
+const config = {
+    encoding: 'utf8',
+    flag: 'w'
+};
+const outputStream = fs.createWriteStream(fileName, config);
 
-        } else {
-            setTimeout(reject, 1000, { error: 'Login failed' })
-        }
-    })
-}
-//
-const showDashBoard = status => {
-    console.log('showDashBoard is called')
+const grains = ['wheat', 'rice', 'oats'];
 
-    return new Promise((resolve, reject) => {
-        if (status.message === 'Login Success') {
-            setTimeout(resolve, 1000, { message: 'Admin Page' })
+grains.forEach(grain => {
+    outputStream.write(grain + " ");
+    console.log("Wrote: %s", grain);
+});
 
-        } else {
-            setTimeout(reject, 1000, { error: 'Error Page' })
-        }
-    })
+outputStream.close();
 
-}
-
-//Promise : The output of one promise will be input to another promise 
-
-async function main() {
-    getUser()
-        .then(user => login(user))
-        .then(status => showDashBoard(status))
-        .then(page => console.log(page))
-        .catch(err => console.log(err))
-
-    try {
-        const user = await getUser()
-        const status = await login(user)
-        const page = await showDashBoard(status)
-        console.log(page)
-    }
-    catch (err) {
-        console.log(err)
-    }
-}
-main()
+outputStream.on('close', function () {
+    console.log('file has been closed ')
+})

@@ -1,0 +1,413 @@
+				 Node.js Apis
+....................................................................................
+
+....................................................................................
+				Node.js Core concepts
+....................................................................................
+
+Node Modules - common js:
+
+Types of modules:
+
+1.Custom module
+  built by us
+2.built in modules
+   provided by node.js  
+3.provided by third party/community
+  libs,frameworks
+
+Node js Built in modules:
+..........................
+
+File System io
+Networking
+os
+etc...
+https://nodejs.org/dist/latest-v16.x/docs/api/
+...................................................................................
+			1.os 
+
+The os module provides operating system-related utility methods and properties. It can be accessed using:
+const os = require('os')
+
+console.log(os.arch())
+console.log(os.cpus())
+console.log(os.freemem())
+console.log(os.hostname())
+console.log(os.totalmem())
+....................................................................................
+
+./ vs ''
+.........
+
+ require('./services/TODOService');
+  ->here you can see ./
+  ./ -current dir
+
+ require('os'); => 
+  -here no ./ 
+
+Why?
+
+Note : if you are java devp, you know the classpath , how it works?
+
+
+require('os');
+
+Node internally uses a search algorthim,node always looks the folder called
+ "node_modules" in the current project, if not , then it searches, the node in built 
+installtion folder---c:/pf/node/node_modules--if it finds it will pick up from there else it will throw error.
+
+require('./services/TODOService');
+   it will lookup in the current dir or sub dirs only.
+
+nternal/modules/cjs/loader.js:800
+    throw err;
+    ^
+
+Error: Cannot find module 'osxx'
+Require stack:
+- C:\session\ibm\feb\nodems\mynodeapps\src\index.js
+[90m    at Function.Module._resolveFilename (internal/modules/cjs/loader.js:797:15)[39m
+[90m    at Function.Module._load (internal/modules/cjs/loader.js:690:27)[39m
+[90m    at Module.require (internal/modules/cjs/loader.js:852:19)[39m
+[90m    at require (internal/modules/cjs/helpers.js:74:18)[39m
+    at Object.<anonymous> (C:\session\ibm\feb\nodems\mynodeapps\src\index.js:1:32)
+[90m    at Module._compile (internal/modules/cjs/loader.js:959:30)[39m
+[90m    at Object.Module._extensions..js (internal/modules/cjs/loader.js:995:10)[39m
+[90m    at Module.load (internal/modules/cjs/loader.js:815:32)[39m
+[90m    at Function.Module._load (internal/modules/cjs/loader.js:727:14)[39m
+[90m    at Function.Module.runMain (internal/modules/cjs/loader.js:1047:10)[39m {
+  code: [32m'MODULE_NOT_FOUND'[39m,
+  requireStack: [ [32m'C:\\session\\ibm\\feb\\nodems\\mynodeapps\\src\\index.js'[39m ]
+}
+...................................................................................
+				Events
+...................................................................................
+
+Node.js is event driven arch, some program emits events called emitter and some program lisents for those events called "listeners".
+
+Using events module we can build event programming model.
+
+As of now , we are going to discuss simple events with in objects, later in microservices we will see the distributed event driven arch.
+
+const EventEmitter = require('events')
+
+class SalesService extends EventEmitter {
+    constructor() {
+        super()
+
+        //register listeners
+        this.on('sales', (evt) => {
+            console.log(evt)
+        })
+
+    }
+    //biz method
+    sale(product) {
+        //when ever sales method is called we can trigger event 
+        this.emit('sales', product)
+    }
+}
+let salesService = new SalesService()
+salesService.sale({ id: 1, name: 'phone' })
+
+..................................................................................
+			IO
+
+-disk io
+-socket io/networking
+
+NonBlocking IO And Blocking:
+
+-node supports even blocking io. only disk io in blocking way
+-node does not support blocking networking io.
+
+
+File system io operations are executed by "worker pool threads".
+
+"Blocking fs io" calls are exectued by a worker pool thread but it blocks main thread
+"Blocking fs io" calls are executed by a worker pool thread but it does not block main thread.
+
+File System:fs
+
+-used to read , write into and from disk.
+
+mode :
+
+  - sync /blocking 
+  - async/ non blocking
+
+based on data read/write:
+
+ -non streaming
+ -streaming
+
+.....................................................................................
+			 File system operations
+....................................................................................
+
+How to read File using nonblocking pattern?
+
+fs.readFile(path[, options], callback)
+
+path <string> | <Buffer> | <URL> | <integer> filename or file descriptor
+options <Object> | <string>
+ encoding <string> | <null> Default: null
+ flag <string> See support of file system flags. Default: 'r'.
+ signal <AbortSignal> allows aborting an in-progress readFile
+
+callback <Function>
+  err <Error> | <AggregateError>
+  data <string> | <Buffer>
+
+
+const fs = require('fs')
+
+const path = './src//assets/info.txt'
+const options = {
+    encoding: 'UTF-8'
+}
+
+function blockMe(message) {
+    console.log(message)
+}
+//async api to read file
+blockMe('start')
+fs.readFile(path, options, (err, data) => {
+    if (err) throw err
+    console.log(data)
+})
+blockMe('end')
+
+How to read File using blocking pattern?
+const fs = require('fs')
+
+const path = './src//assets/info.txt'
+
+const options = {
+    encoding: 'UTF-8'
+}
+
+function blockMe(message) {
+    console.log(message)
+}
+//async api to read file
+blockMe('start')
+const data = fs.readFileSync(path, options)
+console.log(data)
+blockMe('end')
+....................................................................................
+  	 How to write data into file using blocking and nonblocking
+                         way
+.....................................................................................
+//read and write 
+const fs = require('fs')
+const filePath = './src/assets/greet.txt';
+const options = {
+    encoding: 'UTF-8'
+}
+function blockMe(message) {
+    console.log(message)
+}
+//write file in non blocking way 
+
+blockMe('start')
+const data = 'Hello,How are you?'
+fs.writeFile(filePath, data, options, err => {
+    if (err) throw err;
+    console.log(`data has been written into ${filePath}`)
+})
+blockMe('end')
+
+//blocking way of writing data
+const newFilePath = './src/assets/hello.txt';
+
+fs.writeFileSync(newFilePath,data,options)
+...................................................................................
+			  Path Module and Node.js global variables
+
+
+The path module provides utilities for working with file and directory paths.
+
+-node provides lot of global variables
+
+__dirname  : current directory name
+C:\session\ibm\2021\june\nodemicroservices\nodeapps\src
+
+__filename :current directory name + fileName
+C:\session\ibm\2021\june\nodemicroservices\nodeapps\src\index.js
+const fs = require('fs');
+
+const fs = require('fs')
+const path = require('path')
+
+// const filePath = './src//assets/info.txt'
+const filePath = path.join(__dirname,'assets/info.txt')
+
+const options = {
+    encoding: 'UTF-8'
+}
+
+function blockMe(message) {
+    console.log(message)
+}
+//async api to read file
+blockMe('start')
+fs.readFile(filePath, options, (err, data) => {
+    if (err) throw err
+    console.log(data)
+})
+blockMe('end')
+....................................................................................
+			  File Io Reading and Writing mode
+.....................................................................................
+
+Mode of fs read and write:
+.........................
+
+1.Non Streaming Mode
+
+2.Streaming  Mode
+
+1.Non Streaming Mode
+
+  only file io is supported, network io not supported
+
+ -once file is read, the entire file is loaded into node process buffer(memory), then it will be delivered to caller.
+
+-if more files are loaded into node process, node process gets crashed.
+
+-non streaming mode is not suitable for large and big files read or write operation.
+
+fs.readFile() and fs.writeFile are non streaming apis.
+
+
+2.Streaming apis:
+   supported by fs and also network apis
+
+
+-Streaming is nothing but flow of data(chunks).
+-Streaming allows move the data from one place to another place one by one.
+-Streaming apis are other wise called evented io. which is powered events.
+
+
+Types of Streams:
+
+1.Readable Stream : input
+2.Writeable stream : output
+3.Duplex stream : read + write
+
+Node has lot of built in stream apis
+....................................
+
+Built in readable Streams:
+
+-HTTP responses, on the client
+-HTTP requests, on the server
+-fs read streams
+-zlib streams
+-crypto streams
+-TCP sockets
+-child process stdout and stderr
+-process.stdin
+
+Writable Streams:
+
+-HTTP requests, on the client
+-HTTP responses, on the server
+-fs write streams
+-zlib streams
+-crypto streams
+-TCP sockets
+-child process stdin
+-process.stdout, process.stderr
+
+
+All streaming apis are powered with events
+node io streams has built in events.
+events are emitted by node.
+Our programs are listeners
+
+
+Common events in all io
+.........................
+
+
+1.data event:
+ which is emitted by node, for each chunk.
+
+2.close event:
+  The 'close' event is emitted when the stream and any of its underlying resources (a file descriptor, for example) have been closed.
+
+3.end event:
+ The 'end' event is emitted when there is no more data to be consumed from the stream.
+
+3.Event: 'error'
+ The 'error' event may be emitted by a Readable implementation at any time
+Typically, this may occur if the underlying stream is unable to generate data due to an underlying internal failure, or when a stream implementation attempts to push an invalid chunk of data.
+
+//input stream
+const fs = require('fs')
+const path = require('path')
+
+// const filePath = './src//assets/info.txt'
+const filePath = path.join(__dirname, 'assets/info.txt')
+
+const options = {
+    encoding: 'UTF-8'
+}
+
+const inputStream = fs.createReadStream(filePath, options)
+
+let data = ''
+//attach events
+inputStream.on('data', (chunk) => {
+    data += chunk
+})
+inputStream.on('end', () => {
+    console.log(data)
+})
+inputStream.on('error', (err) => {
+    console.log(err)
+})
+.................................................................................
+				Write Stream
+.................................................................................
+const fs = require('fs');
+const path = require('path');
+
+const fileName = path.join(__dirname, 'assets/grains.txt');
+
+const config = {
+    encoding: 'utf8',
+    flag: 'w'
+};
+const outputStream = fs.createWriteStream(fileName, config);
+
+const grains = ['wheat', 'rice', 'oats'];
+
+grains.forEach(grain => {
+    outputStream.write(grain + " ");
+    console.log("Wrote: %s", grain);
+});
+
+outputStream.close();
+
+outputStream.on('close', function () {
+    console.log('file has been closed ')
+})
+.....................................................................................
+	
+
+
+
+
+
+
+
+
+
+
+
+
