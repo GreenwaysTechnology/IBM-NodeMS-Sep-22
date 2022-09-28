@@ -286,7 +286,32 @@ userRouter.post('/', async (req, res) => {
 
 
 module.exports = userRouter
+const express = require('express')
+const bodyParser = require('body-parser')
 
+const userRouter = require('./routers/user.router')
+const todoRouter = require('./routers/todo.router')
+//create application object 
+
+const app = express()
+//register middleware
+app.use(bodyParser.json())
+
+//mount the userRouter with app .
+app.use('/api/users', userRouter)
+app.use('/api/todos',todoRouter)
+
+
+//home page
+app.get('/', (req, res) => {
+    res.end('Home')
+})
+
+
+//start server 
+app.listen(3000, () => {
+    console.log('Express app is running!')
+})
 
 
 
