@@ -1,0 +1,382 @@
+                       How to build NonBlocking Web Applications 
+
+
+Node.js is reference implementation of "c10K" Problem.
+Node.js has removed the concept of "Request Per Thread Model"
+Node.js Handls more concurrent requests using "single Event Loop thread".
+
+Node.js Provides a module called "http".
+
+Node Js Provides HTTP Server,HttpApplication , is nonblocking.
+
+Unlike traditional webservers,node uses single event thread to handle concurrent requests.
+
+Http Module:
+The HTTP interfaces in Node.js are designed to support many features of the protocol which have been traditionally difficult to use. In particular, large, possibly chunk-encoded, messages. The interface is careful to never buffer entire requests or responses, so the user is able to stream data.
+
+HTTP modules objects:
+
+1.Server
+  Server object is used to implement http servers/web containers
+2.ServerResponse
+  Object is used to send data 
+3.ClientRequest
+   Request object is used to handle http client requests
+4.IncommingMessage
+   Represents message payloads.
+
+
+In Node Web:
+
+1.You create web containers
+2.YOu create web app
+3.You deploy it.
+
+const http = require('http')
+//create server
+const server = http.createServer((req,res)=>{
+    //logic
+    res.write("<h1>Hello,Node</h1>")
+    res.end()
+})
+
+//deploy/start server
+
+server.listen(3000,()=>{
+    console.log('HTTP server starts')
+})
+....................................................................................
+			 How to enable hot reloading feature
+
+When ever the program gets changed we need to monitor the program and update accordingly.
+
+nodemon - node monitor package.
+npm install -g nodemon
+
+nodemon src/index.js
+nodemon] 2.0.20
+[nodemon] to restart at any time, enter `rs`
+[nodemon] watching path(s): *.*
+[nodemon] watching extensions: js,mjs,json
+[nodemon] starting `node src/index.js`
+HTTP server starts
+[nodemon] restarting due to changes...
+[nodemon] starting `node src/index.js`
+HTTP server starts
+
+Use case:
+ REST API which sends data as json.
+
+Things to be done:
+
+1.Modularity
+
+Controller
+  entry point to the users.
+Service
+  Service module will return data.
+
+src/services/user.service.js
+
+
+class UserService {
+    constructor() { }
+
+    //findAll 
+    findAll() {
+        return [{
+            id: 1,
+            name: 'Subramanian'
+        },
+        {
+            id: 2,
+            name: 'Ram'
+        }
+        ]
+    }
+}
+//
+module.exports = new UserService()
+
+
+src/index.js
+const http = require('http')
+const userservice = require('./services/users.service')
+
+
+//create server
+const server = http.createServer((req, res) => {
+    const users = userservice.findAll()
+    //set header
+    res.writeHead(200, {
+        'Content-Type': 'application/json'
+    })
+    res.end(JSON.stringify(users))
+})
+
+//deploy/start server
+
+server.listen(3000, () => {
+    console.log('HTTP server starts')
+})
+....................................................................................
+			How to return data in async ways
+...................................................................................
+
+Callback:
+const http = require('http')
+const userservice = require('./services/users.service')
+
+
+//create server - sync call
+// const server = http.createServer((req, res) => {
+//     const users = userservice.findAll()
+//     //set header
+//     res.writeHead(200, {
+//         'Content-Type': 'application/json'
+//     })
+//     res.end(JSON.stringify(users))
+// })
+//async call
+const server = http.createServer((req, res) => {
+    userservice.findAll(users => {
+        //set header
+        res.writeHead(200, {
+            'Content-Type': 'application/json'
+        })
+        res.end(JSON.stringify(users))
+    })
+
+})
+
+//deploy/start server
+
+server.listen(3000, () => {
+    console.log('HTTP server starts')
+})
+
+
+// class UserService {
+//     constructor() { }
+
+//     //findAll 
+//     findAll() {
+//         return [{
+//             id: 1,
+//             name: 'Subramanian'
+//         },
+//         {
+//             id: 2,
+//             name: 'Ram'
+//         }
+//         ]
+//     }
+// }
+
+const USERS = [{
+    id: 1,
+    name: 'Subramanian'
+},
+{
+    id: 2,
+    name: 'Ram'
+}
+]
+//async with callback pattern 
+class UserService {
+    constructor() { }
+
+    //findAll 
+    findAll(callback) {
+        setTimeout(callback,1000,USERS)
+    }
+}
+//
+module.exports = new UserService()
+
+Promises:
+
+
+// class UserService {
+//     constructor() { }
+
+//     //findAll 
+//     findAll() {
+//         return [{
+//             id: 1,
+//             name: 'Subramanian'
+//         },
+//         {
+//             id: 2,
+//             name: 'Ram'
+//         }
+//         ]
+//     }
+// }
+
+const USERS = [{
+    id: 1,
+    name: 'Subramanian'
+},
+{
+    id: 2,
+    name: 'Ram'
+}
+]
+//async with callback pattern 
+// class UserService {
+//     constructor() { }
+
+//     //findAll 
+//     findAll(callback) {
+//         setTimeout(callback,1000,USERS)
+//     }
+// }
+
+//promises
+class UserService {
+    constructor() { }
+
+    //findAll 
+    findAll() {
+        return new Promise((resolve,reject)=>{
+            setTimeout(resolve,1000,USERS)
+        })
+    }
+}
+//
+module.exports = new UserService()
+
+
+const http = require('http')
+const userservice = require('./services/users.service')
+
+
+//create server - sync call
+// const server = http.createServer((req, res) => {
+//     const users = userservice.findAll()
+//     //set header
+//     res.writeHead(200, {
+//         'Content-Type': 'application/json'
+//     })
+//     res.end(JSON.stringify(users))
+// })
+//async call
+// const server = http.createServer((req, res) => {
+//     userservice.findAll(users => {
+//         //set header
+//         res.writeHead(200, {
+//             'Content-Type': 'application/json'
+//         })
+//         res.end(JSON.stringify(users))
+//     })
+
+// })
+
+//promise 
+const server = http.createServer((req, res) => {
+    userservice.findAll()
+        .then(users => {
+            res.writeHead(200, {
+                'Content-Type': 'application/json'
+            })
+            res.end(JSON.stringify(users))
+        }).catch(err => {
+            res.end(JSON.stringify(err))
+        })
+
+})
+
+//deploy/start server
+
+server.listen(3000, () => {
+    console.log('HTTP server starts')
+})
+
+Promise with async await:
+........................
+const http = require('http')
+const userservice = require('./services/users.service')
+
+
+//create server - sync call
+// const server = http.createServer((req, res) => {
+//     const users = userservice.findAll()
+//     //set header
+//     res.writeHead(200, {
+//         'Content-Type': 'application/json'
+//     })
+//     res.end(JSON.stringify(users))
+// })
+//async call
+// const server = http.createServer((req, res) => {
+//     userservice.findAll(users => {
+//         //set header
+//         res.writeHead(200, {
+//             'Content-Type': 'application/json'
+//         })
+//         res.end(JSON.stringify(users))
+//     })
+
+// })
+
+//promise 
+// const server = http.createServer((req, res) => {
+//     userservice.findAll()
+//         .then(users => {
+//             res.writeHead(200, {
+//                 'Content-Type': 'application/json'
+//             })
+//             res.end(JSON.stringify(users))
+//         }).catch(err => {
+//             res.end(JSON.stringify(err))
+//         })
+
+// })
+
+//promise with async await
+const server = http.createServer(async (req, res) => {
+    const users = await userservice.findAll()
+    //set header
+    res.writeHead(200, {
+        'Content-Type': 'application/json'
+    })
+    res.end(JSON.stringify(users))
+
+})
+
+//deploy/start server
+
+server.listen(3000, () => {
+    console.log('HTTP server starts')
+})
+.....................................................................................
+			How to read user input
+.
+const http = require('http')
+
+
+//create server
+const server = http.createServer((req, res) => {
+    //read User input 
+    let data = ''
+    req.on('data', chunk => {
+        data += chunk
+    })
+    req.on('end', () => {
+        console.log(data)
+        res.end(data)
+    })
+
+})
+
+//deploy/start server
+
+server.listen(3000, () => {
+    console.log('HTTP server starts')
+})
+
+
+
+
+
