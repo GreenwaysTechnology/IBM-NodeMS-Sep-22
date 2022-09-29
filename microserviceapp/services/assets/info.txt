@@ -1,0 +1,1 @@
+This is File,Streamed from Micro service

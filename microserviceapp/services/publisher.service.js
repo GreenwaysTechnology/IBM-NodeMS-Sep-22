@@ -11,7 +11,6 @@ broker.createService({
             handler(ctx) {
                  ctx.emit("adder.add", { a: ctx.params.a, b: ctx.params.b })
                 // ctx.broadcast("adder.add", { a: ctx.params.a, b: ctx.params.b })
-
                 return 'Event has emitted'
             }
         }
