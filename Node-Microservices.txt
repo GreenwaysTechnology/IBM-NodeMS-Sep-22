@@ -1640,6 +1640,287 @@ async function main() {
 }
 main()
 ....................................................................................
+				RestFull WebService
+
+
+Moleculer Modules:
+..................
+
+Moleculer core lib provides only how to create backend services, service interactions.
+
+If i want to integrate lets say, rest api,databases, then we have to look at moleculer modules.
+
+1.Gateways
+2.Database and stores
+3.Metrics & Tracing 
+4.General 
+5.Security
+6.Tasks&Queues
+7.Jobs
+etc...
+1.GateWay : moleculer-web:Official API Gateway for Moleculer framework.
+
+Features:
+
+support HTTP & HTTPS
+serve static files
+multiple routes
+support global, route, alias middlewares
+support file uploading
+alias names (with named parameters & REST shorthand)
+whitelist
+multiple body parsers (json, urlencoded)
+CORS headers
+ETags
+HTTP2
+Rate limiter
+before & after call hooks
+Buffer & Stream handling
+middleware mode (use as a middleware in ExpressJS Application)
+support authorization and auth
+.....................................................................................
+			How to write first rest service
+.....................................................................................
+
+const { ServiceBroker } = require('moleculer')
+const ApiGateWay = require('moleculer-web')
+
+const broker = new ServiceBroker()
+
+//create apigateWay
+broker.createService({
+    name: 'ApiGateWay',
+    mixins: [ApiGateWay]
+})
+
+
+async function main() {
+    await broker.start()
+}
+main()
+
+.................................................................................
+				Greeter Rest Service
+
+const { ServiceBroker } = require('moleculer')
+const ApiGateWay = require('moleculer-web')
+
+const broker = new ServiceBroker()
+
+//create apigateWay
+broker.createService({
+    name: 'ApiGateWay',
+    mixins: [ApiGateWay]
+})
+
+broker.createService({
+    name: 'greeter',
+    actions: {
+        sayHello() {
+            return 'Hello,Moleculer'
+        }
+    }
+})
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add() {
+            return 10 + 10
+        }
+    }
+})
+
+async function main() {
+    await broker.start()
+}
+main()
+
+
+
+how to call backend service(rpc service) from the GateWay Service?
+
+http://localhost:3000/servicename/methodname
+http://localhost:3000/greeter/sayHello
+http://localhost:3000/hello/sayHello
+....................................................................................
+			Distributed Rest Service
+
+
+
+User----send Request------ApiGateWay --------Services
+
+Front End Service:
+const { ServiceBroker } = require('moleculer')
+const ApiGateWay = require('moleculer-web')
+
+const broker = new ServiceBroker({
+    transporter: "TCP",
+    serializer: "JSON"
+})
+
+//create apigateWay
+broker.createService({
+    name: 'ApiGateWay',
+    mixins: [ApiGateWay]
+})
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                //call adder.add 
+                return ctx.call('adder.add', { a: 10, b: 10 })
+            }
+        }
+    }
+
+})
+
+async function main() {
+    await broker.start()
+}
+main()
+..................................
+const { ServiceBroker } = require('moleculer')
+
+const broker = new ServiceBroker({
+    transporter: "TCP",
+    serializer: "JSON"
+})
+
+broker.createService({
+    name: 'adder',
+    actions: {
+        add: {
+            handler(ctx) {
+                //object destructuring: - break object properties 
+                const { a, b } = ctx.params
+                const result = a +b 
+                return `${broker.nodeID} -> ${result}`
+            }
+        }
+    }
+})
+
+async function main() {
+    await broker.start()
+    broker.repl()
+}
+main()
+.....................................................................................
+			 Configuration-Routers Configuration
+.....................................................................................
+const { ServiceBroker } = require('moleculer')
+const ApiGateWay = require('moleculer-web')
+
+const broker = new ServiceBroker({
+    transporter: "TCP",
+    serializer: "JSON"
+})
+
+// http://localhost:3000/api/math/add
+
+//create apigateWay
+broker.createService({
+    name: 'ApiGateWay',
+    mixins: [ApiGateWay],
+    settings: {
+        routes: [{
+            path: '/admin'
+        },
+        {
+            path: '/api'
+        }]
+    }
+
+})
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                return 10 + 10
+            }
+        }
+    }
+
+})
+
+async function main() {
+    await broker.start()
+}
+main()
+.............................................................................................
+    		How to restrict service method/actions access outside
+				whiteList - configuration
+.....................................................................................
+const { ServiceBroker } = require('moleculer')
+const ApiGateWay = require('moleculer-web')
+
+const broker = new ServiceBroker({
+    transporter: "TCP",
+    serializer: "JSON"
+})
+
+// http://localhost:3000/api/math/add
+
+//create apigateWay
+broker.createService({
+    name: 'ApiGateWay',
+    mixins: [ApiGateWay],
+    settings: {
+        routes: [{
+            path: '/admin'
+        },
+        {
+            path: '/api',
+            whitelist: [
+                "math.add",
+                //"math*"
+            ]
+
+        }]
+    }
+
+})
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                return 10 + 10
+            }
+        },
+        div: {
+            handler(ctx) {
+                return 10 / 10
+            }
+        }
+    }
+
+})
+
+async function main() {
+    await broker.start()
+}
+main()
+
+http://localhost:3000/api/math/div
+
+{
+name: "ServiceNotFoundError",
+message: "Service 'math.div' is not found.",
+code: 404,
+type: "SERVICE_NOT_FOUND",
+data: {
+action: "math.div"
+}
+}
+.......................................................................................
+
+
+
 
 
 
