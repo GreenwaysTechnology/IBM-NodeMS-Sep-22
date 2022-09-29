@@ -548,15 +548,580 @@ mol $ call math.divide --a 10000 --b 234
 >> Execution time:4ms
 >> Response:
 42.73504273504273
+.....................................................................................
+			 Microservice communications -Communications Style
+....................................................................................
+
+Micro service communications happens across the applications or within applications.
+
+Service Representation
+
+1.rpc 
+2.rest
+3.graphql
+
+Service communications
+
+1.rpc to rpc
+
+2.rest to rest
+
+2.rest to rpc
 
 
+Moleculer is microservice, generally microservices may be distributed across multiple machines(nodes) , which communicates via networks.
 
 
+1.Service communication with in single broker
+
+2.Service communication across multiple service brokers
+
+Communication style
+
+1. can be sync
+2. can be async
+
+RPI style
+   method to method call
+Event driven style
+   methods communicates via events.
 
 
+Types of services:
 
-
+1.local service
+   service which is implemented on single broker.
+2.remote service
+   Service which is implemented across the brokers.
  
+Services can communicate within service broker-single node arch
+Services can communicate across service brokers - multi node arch
+
+How services are interacting each other?
+
+ Using "Context" Object
+
+Actors:
+
+ 1.Caller service, who is calling /consuming other services
+
+ 2.Callee service, who is called by others
+
+
+Use case: Service to Service : RPI TO RPI - Method to method call - on single broker
+...................................................................................
+
+const { ServiceBroker } = require('moleculer')
+
+const broker = new ServiceBroker()
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                const a = ctx.params.a
+                const b = ctx.params.b
+                //call adder.add 
+                return ctx.call('adder.add', { a: a, b: b })
+            }
+        }
+    }
+
+})
+broker.createService({
+    name: 'adder',
+    actions: {
+        add: {
+            handler(ctx) {
+                //object destructuring: - break object properties 
+                const { a, b } = ctx.params
+                return a + b
+            }
+        }
+    }
+})
+
+async function main() {
+    await broker.start()
+    broker.repl()
+}
+main()
+
+mol $ call math.add --a 10 --b 20
+>> Call 'math.add' with params: { a: 10, b: 20 } with meta: { '$repl': true } with options: {}
+>> Execution time:3ms
+>> Response:
+30
+mol $
+
+....................................................................................
+				  Remote Service Communication
+.....................................................................................
+
+Microservices are loosly coupled services, runs indendently, how do they communicate
+
+Remote Services
+-Services are located across the nodes.
+-nodes can be the same machine or different machines, or cloud.
+
+Run two services in a different node.
+
+node services/remote1.service.js
+
+node services/remote2.service.js
+
+
+remote1.service.js
+const { ServiceBroker } = require('moleculer')
+
+const broker = new ServiceBroker()
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                const a = ctx.params.a
+                const b = ctx.params.b
+                //call adder.add 
+                return ctx.call('adder.add', { a: a, b: b })
+            }
+        }
+    }
+
+})
+async function main() {
+    await broker.start()
+    broker.repl()
+}
+main()
+.........................
+remote2.service.js
+
+
+const { ServiceBroker } = require('moleculer')
+
+const broker = new ServiceBroker()
+
+broker.createService({
+    name: 'adder',
+    actions: {
+        add: {
+            handler(ctx) {
+                //object destructuring: - break object properties 
+                const { a, b } = ctx.params
+                return a + b
+            }
+        }
+    }
+})
+
+async function main() {
+    await broker.start()
+    broker.repl()
+}
+main()
+
+mol $ call math.add --a 10 --b 20
+>> Call 'math.add' with params: { a: 10, b: 20 } with meta: { '$repl': true } with options: {}
+[2022-09-29T04:52:49.424Z] WARN  laptop-r2tggfdl-22476/BROKER: Service 'adder.add' is not registered.
+>> ERROR:
+ServiceNotFoundError: Service 'adder.add' is not found.
+    at ServiceBroker.findNextActionEndpoint (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer\src\service-broker.js:1130:13)
+    at ServiceBroker.call (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer\src\service-broker.js:1179:26)
+    at Context.call (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer\src\context.js:286:23)
+    at Service.handler (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\services\remote1.service.js:13:28)
+    at E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer\src\utils.js:212:22
+    at ServiceBroker.timeoutMiddleware (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer\src\middlewares\timeout.js:31:14)
+    at ServiceBroker.fallbackMiddleware (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer\src\middlewares\fallback.js:31:11)
+    at ServiceBroker.errorHandlerMiddleware (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer\src\middlewares\error-handler.js:14:10)
+    at ServiceBroker.call (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer\src\service-broker.js:1203:31)
+    at handler (E:\session\IBM\2022\sep\nodejsmicroservice\microserviceapp\node_modules\moleculer-repl\src\commands\call.js:131:28)
+Data:  { action: 'adder.add' }
+
+Why the above error?
+
+-Service not able to locate the other service, since other services are running in different nodes
+
+
+In order to enable Remote Service communications , we need Transporters
+
+Transporter is a channel and bridge layer among services.
+
+
+In order to enable Remote Service communications , we need Message Brokers 
+
+
+Transporters:
+
+-Transporter is an important module if you are running services on multiple nodes. 
+
+-Transporter communicates with other nodes. 
+
+-It transfers events, calls requests and processes responses …etc. 
+
+-If a service runs on multiple instances on different nodes, the requests will be load-balanced among live nodes.
+
+
+Transports:
+............
+
+Built-in transporter
+TCP transporter - part of moleculer
+
+Third party Brokers
+
+NATS Transporter
+Redis Transporter
+MQTT Transporter
+AMQP Transporter
+Kafka Transporter
+NATS Streaming (STAN) Transporter
+
+TCP transporter:
+
+This is a no-dependency, zero-configuration TCP transporter.
+It uses Gossip protocol to disseminate node statuses, service list and heartbeats.
+It contains an integrated UDP discovery feature to detect new and disconnected nodes on the network.
+If the UDP is prohibited on your network, use urls option. It is a list of remote endpoints (host/ip, port, nodeID). It can be a static list in your configuration or a file path which contains the list.
+ 
+
+Use case :How to use TCP transport as channel for service Communications.
+
+We need to configure Service Broker to enable transport.
+
+ServiceBroker object creation:
+
+const broker = new ServiceBroker();
+
+ Here we have not passed any parameter to ServiceBroker Constructor, if you dont, the default parameters will be passed.
+
+Service Broker Parameters are called as "ServiceBroker Schema"
+
+We can override service Broker Schema to enable broker vide features.
+
+const { ServiceBroker } = require('moleculer')
+const broker = new ServiceBroker({
+    transporter:"TCP"
+});
+
+const { ServiceBroker } = require('moleculer')
+
+const broker = new ServiceBroker({
+    transporter: "TCP"
+})
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                const a = ctx.params.a
+                const b = ctx.params.b
+                //call adder.add 
+                return ctx.call('adder.add', { a: a, b: b })
+            }
+        }
+    }
+
+})
+async function main() {
+    await broker.start()
+    broker.repl()
+}
+main()
+
+const { ServiceBroker } = require('moleculer')
+
+const broker = new ServiceBroker({
+    transporter: "TCP"
+})
+
+broker.createService({
+    name: 'adder',
+    actions: {
+        add: {
+            handler(ctx) {
+                //object destructuring: - break object properties 
+                const { a, b } = ctx.params
+                return `${broker.nodeID} -> ${a} + ${b}`
+            }
+        }
+    }
+})
+
+async function main() {
+    await broker.start()
+    broker.repl()
+}
+main()
+......................************..................................................
+mol $ call math.add --a 10 --b 20
+>> Call 'math.add' with params: { a: 10, b: 20 } with meta: { '$repl': true } with options: {}
+>> Execution time:6ms
+>> Response:
+'laptop-r2tggfdl-15124 -> 10 + 20'
+.....................................................................................
+			      Service communication via 
+		   Third party brokers - NATS,Redis,RabbitMQ,Kaffka
+
+
+NATS:
+Steps:
+1.You need to start NATS server.
+https://nats.io/download/
+
+docker run -p 4222:4222 -ti nats:latest
+
+
+2.configure in service broker
+
+const broker = new ServiceBroker({
+    nodeID : 'IBM-Adder Service',
+    transporter: "nats://localhost:4222"
+});
+
+3.install nats dirver package
+npm install nats --save
+
+4.Run nodes as usual
+....................................................................................
+				Serialization
+Transporter needs a serializer module which serializes & deserializes the transferred packets. 
+The default serializer is the JSONSerializer but there are several built-in serializer.
+
+const { ServiceBroker } = require('moleculer')
+
+
+const broker = new ServiceBroker({
+  //  transporter:"TCP"
+  transporter: "nats://localhost:4222",
+  serializer: "JSON" // not necessary to set, because it is the default
+
+});
+
+..
+const { ServiceBroker } = require('moleculer')
+
+// const broker = new ServiceBroker({
+//     transporter: "TCP"
+// })
+const broker = new ServiceBroker({
+    transporter: "nats://localhost:4222",
+    serializer: "JSON"
+})
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                const a = ctx.params.a
+                const b = ctx.params.b
+                //call adder.add 
+                return ctx.call('adder.add', { a: a, b: b })
+            }
+        }
+    }
+
+})
+broker.createService({
+    name:'customer',
+    actions: {
+        list: {
+            handler(ctx){
+                return ctx.call('product.list')
+            }
+        }
+    }
+})
+
+async function main() {
+    await broker.start()
+    broker.repl()
+}
+main()
+...........
+const { ServiceBroker } = require('moleculer')
+
+// const broker = new ServiceBroker({
+//     transporter: "TCP"
+// })
+const broker = new ServiceBroker({
+    transporter: "nats://localhost:4222",
+    serializer: "JSON"
+})
+
+broker.createService({
+    name: 'adder',
+    actions: {
+        add: {
+            handler(ctx) {
+                //object destructuring: - break object properties 
+                const { a, b } = ctx.params
+                return `${broker.nodeID} -> ${a} + ${b}`
+            }
+        }
+    }
+})
+
+broker.createService({
+    name: 'product',
+    actions: {
+        list: {
+            handler(ctx) {
+                return [{ id: 1, name: 'Phone', qty: 10, price: 100 }, { id: 2, name: 'TV', qty: 10, price: 340 }]
+            }
+        }
+    }
+})
+
+async function main() {
+    await broker.start()
+    broker.repl()
+}
+main()
+....
+mol $ call product.list
+>> Call 'product.list' with params: {} with meta: { '$repl': true } with options: {}
+>> Execution time:2ms
+>> Response:
+[
+  { id: 1, name: 'Phone', qty: 10, price: 100 },
+  { id: 2, name: 'TV', qty: 10, price: 340 }
+]
+..........................********...................................................
+.....................................................................................
+			Loosly Coupled Service Communication
+				Event Driven Archs
+			 How to communicate via events
+....................................................................................
+
+Broker has a built-in event bus to support Event-driven architecture and to send events to local and remote services.
+
+
+Callee: Events Listeners
+
+   events: {
+        "order.created": {
+            handler(ctx) {
+                console.log("Payload:", ctx.params);
+                console.log("Sender:", ctx.nodeID);
+                console.log("Metadata:", ctx.meta);
+                console.log("The called event name:", ctx.eventName);
+            }
+        }
+    }
+   
+
+caller: Event emission
+
+ broker/ctx.emit("order.created",{order:{id:1,name:'test'}}) - one to one
+ broker/ctx.broadcast("order.created",{order:{id:1,name:'test'}}) - one to many
+
+
+publisher.service.js
+const { ServiceBroker } = require("moleculer")
+
+const broker = new ServiceBroker({
+    transporter: "TCP"
+});
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                // ctx.emit("adder.add", { a: ctx.params.a, b: ctx.params.b })
+                ctx.broadcast("adder.add", { a: ctx.params.a, b: ctx.params.b })
+
+                return 'Event has emitted'
+            }
+        }
+    }
+})
+
+async function main() {
+
+    try {
+        await broker.start()
+        console.log('Service Broker is ready')
+        broker.repl();
+    } catch (error) {
+        console.log(error)
+    }
+}
+main();
+
+listener.service.js
+const { ServiceBroker } = require("moleculer")
+
+const broker = new ServiceBroker({
+    transporter: "TCP"
+});
+
+broker.createService({
+    name: 'adder',
+    events: {
+        "adder.add": {
+            params: {
+                a: "number",
+                b: "number"
+            },
+            handler(ctx){
+                console.log("Payload:", ctx.params);
+                console.log("Sender:", ctx.nodeID);
+                console.log("Metadata:", ctx.meta);
+                console.log("The called event name:", ctx.eventName);
+            }
+        }
+    }
+})
+
+async function main() {
+
+    try {
+        await broker.start()
+        console.log('Service Broker is ready')
+        broker.repl();
+    } catch (error) {
+        console.log(error)
+    }
+}
+main();
+
+listener2.service.js
+const { ServiceBroker } = require("moleculer")
+
+const broker = new ServiceBroker({
+    transporter: "TCP"
+});
+
+broker.createService({
+    name: 'math',
+    actions: {
+        add: {
+            handler(ctx) {
+                // ctx.emit("adder.add", { a: ctx.params.a, b: ctx.params.b })
+                ctx.broadcast("adder.add", { a: ctx.params.a, b: ctx.params.b })
+
+                return 'Event has emitted'
+            }
+        }
+    }
+})
+
+async function main() {
+
+    try {
+        await broker.start()
+        console.log('Service Broker is ready')
+        broker.repl();
+    } catch (error) {
+        console.log(error)
+    }
+}
+main();
 
 
 
