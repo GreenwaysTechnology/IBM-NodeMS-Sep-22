@@ -12,6 +12,7 @@
   "dependencies": {
     "compression": "^1.7.4",
     "fakerator": "^0.3.6",
+    "ioredis": "^5.2.3",
     "moleculer": "^0.14.23",
     "moleculer-db": "^0.8.19",
     "moleculer-web": "^0.10.4",
